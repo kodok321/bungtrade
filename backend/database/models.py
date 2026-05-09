@@ -41,8 +41,8 @@ class User(Base):
     hashed_password = Column(String(255), nullable=False)
     is_active = Column(Boolean, default=True)
     is_admin = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     api_keys = relationship("ExchangeAPIKey", back_populates="user", cascade="all, delete-orphan")
     trades = relationship("Trade", back_populates="user", cascade="all, delete-orphan")
@@ -63,7 +63,7 @@ class ExchangeAPIKey(Base):
     is_testnet = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True)
     ip_whitelist = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     user = relationship("User", back_populates="api_keys")
 
@@ -91,8 +91,8 @@ class Trade(Base):
     order_id = Column(String(100), nullable=True)
     ai_confidence = Column(Float, nullable=True)
     notes = Column(Text, nullable=True)
-    opened_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    closed_at = Column(DateTime, nullable=True)
+    opened_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    closed_at = Column(DateTime(timezone=True), nullable=True)
 
     user = relationship("User", back_populates="trades")
 
@@ -112,7 +112,7 @@ class Signal(Base):
     strategy = Column(String(50), nullable=True)
     analysis = Column(JSON, nullable=True)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
 class UserSettings(Base):
@@ -131,8 +131,8 @@ class UserSettings(Base):
     telegram_chat_id = Column(String(100), nullable=True)
     paper_trading = Column(Boolean, default=False)
     active_strategy = Column(String(50), default="ema_cross")
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     user = relationship("User", back_populates="settings")
 
@@ -149,7 +149,7 @@ class PaperAccount(Base):
     winning_trades = Column(Integer, default=0)
     losing_trades = Column(Integer, default=0)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     user = relationship("User", back_populates="paper_accounts")
 
@@ -164,7 +164,7 @@ class AILog(Base):
     reasoning = Column(Text)
     indicators = Column(JSON)
     result = Column(String(20), nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
 class BacktestResult(Base):
@@ -175,8 +175,8 @@ class BacktestResult(Base):
     strategy = Column(String(50), nullable=False)
     symbol = Column(String(20), nullable=False)
     timeframe = Column(String(10), nullable=False)
-    start_date = Column(DateTime, nullable=False)
-    end_date = Column(DateTime, nullable=False)
+    start_date = Column(DateTime(timezone=True), nullable=False)
+    end_date = Column(DateTime(timezone=True), nullable=False)
     initial_balance = Column(Float, default=10000.0)
     final_balance = Column(Float)
     total_trades = Column(Integer)
@@ -189,4 +189,4 @@ class BacktestResult(Base):
     equity_curve = Column(JSON, nullable=True)
     monthly_returns = Column(JSON, nullable=True)
     trades_log = Column(JSON, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
