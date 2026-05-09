@@ -10,7 +10,7 @@ python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 cryptography==44.0.0
 python-multipart==0.0.20
-ccxt==4.4.54
+ccxt>=4.4.0
 pandas==2.2.3
 numpy==2.2.1
 scikit-learn==1.6.1

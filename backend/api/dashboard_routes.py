@@ -24,7 +24,10 @@ async def get_dashboard(
 
     open_trades = [t for t in all_trades if t.status == "open"]
     closed_trades = [t for t in all_trades if t.status in ("filled", "closed")]
-    today_trades = [t for t in closed_trades if t.closed_at and t.closed_at >= today]
+    today_trades = [
+        t for t in closed_trades
+        if t.closed_at and t.closed_at.replace(tzinfo=timezone.utc) >= today
+    ]
 
     total_pnl = sum(t.pnl for t in closed_trades)
     daily_profit = sum(t.pnl for t in today_trades)

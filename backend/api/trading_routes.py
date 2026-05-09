@@ -12,6 +12,25 @@ from backend.exchange.binance_client import BinanceClient
 router = APIRouter(prefix="/api/trading", tags=["Trading"])
 
 
+async def _fetch_market_price(symbol: str) -> float:
+    client = BinanceClient()
+    try:
+        ticker = await client.get_ticker(symbol)
+        return float(ticker["last"])
+    except Exception:
+        return 0.0
+
+
+def _calc_pnl(side: str, entry_price: float, exit_price: float, quantity: float):
+    if side.lower() == "buy":
+        pnl = (exit_price - entry_price) * quantity
+    else:
+        pnl = (entry_price - exit_price) * quantity
+    cost = entry_price * quantity
+    pnl_percent = (pnl / cost * 100) if cost > 0 else 0.0
+    return round(pnl, 4), round(pnl_percent, 2)
+
+
 @router.post("/order", response_model=TradeResponse)
 async def place_order(
     order: OrderCreate,
@@ -19,11 +38,14 @@ async def place_order(
     db: AsyncSession = Depends(get_db),
 ):
     if order.is_paper:
+        entry_price = order.price
+        if not entry_price:
+            entry_price = await _fetch_market_price(order.symbol)
         trade = Trade(
             user_id=current_user.id,
             symbol=order.symbol,
             side=order.side,
-            entry_price=order.price or 0,
+            entry_price=entry_price,
             quantity=order.quantity,
             take_profit=order.take_profit,
             stop_loss=order.stop_loss,
@@ -122,6 +144,12 @@ async def close_trade(
     if trade.status != "open":
         raise HTTPException(status_code=400, detail="Trade is not open")
 
+    exit_price = await _fetch_market_price(trade.symbol)
+    pnl, pnl_percent = _calc_pnl(trade.side, trade.entry_price, exit_price, trade.quantity)
+
+    trade.exit_price = exit_price
+    trade.pnl = pnl
+    trade.pnl_percent = pnl_percent
     trade.status = "filled"
     trade.closed_at = datetime.now(timezone.utc)
     await db.flush()
@@ -138,9 +166,15 @@ async def close_all_positions(
     )
     trades = result.scalars().all()
     closed_count = 0
+    now = datetime.now(timezone.utc)
     for trade in trades:
+        exit_price = await _fetch_market_price(trade.symbol)
+        pnl, pnl_percent = _calc_pnl(trade.side, trade.entry_price, exit_price, trade.quantity)
+        trade.exit_price = exit_price
+        trade.pnl = pnl
+        trade.pnl_percent = pnl_percent
         trade.status = "filled"
-        trade.closed_at = datetime.now(timezone.utc)
+        trade.closed_at = now
         closed_count += 1
     await db.flush()
     return {"message": f"Closed {closed_count} positions"}

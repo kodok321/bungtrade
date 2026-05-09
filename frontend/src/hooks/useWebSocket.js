@@ -4,8 +4,11 @@ export function useWebSocket(url) {
   const [data, setData] = useState(null)
   const [isConnected, setIsConnected] = useState(false)
   const wsRef = useRef(null)
+  const activeRef = useRef(true)
+  const reconnectTimeoutRef = useRef(null)
 
   const connect = useCallback(() => {
+    if (!activeRef.current) return
     if (wsRef.current) wsRef.current.close()
 
     const wsUrl = url.startsWith('ws') ? url : `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}${url}`
@@ -21,7 +24,9 @@ export function useWebSocket(url) {
     }
     ws.onclose = () => {
       setIsConnected(false)
-      setTimeout(connect, 3000)
+      if (activeRef.current) {
+        reconnectTimeoutRef.current = setTimeout(connect, 3000)
+      }
     }
     ws.onerror = () => ws.close()
 
@@ -29,8 +34,13 @@ export function useWebSocket(url) {
   }, [url])
 
   useEffect(() => {
+    activeRef.current = true
     connect()
-    return () => { if (wsRef.current) wsRef.current.close() }
+    return () => {
+      activeRef.current = false
+      if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current)
+      if (wsRef.current) wsRef.current.close()
+    }
   }, [connect])
 
   return { data, isConnected }
