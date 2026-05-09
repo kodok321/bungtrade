@@ -16,9 +16,15 @@ async def _fetch_market_price(symbol: str) -> float:
     client = BinanceClient()
     try:
         ticker = await client.get_ticker(symbol)
-        return float(ticker["last"])
-    except Exception:
-        return 0.0
+        price = float(ticker["last"])
+        if price <= 0:
+            raise ValueError("Invalid price")
+        return price
+    except Exception as e:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Unable to fetch market price for {symbol}: {e}",
+        )
 
 
 def _calc_pnl(side: str, entry_price: float, exit_price: float, quantity: float):
@@ -90,7 +96,7 @@ async def place_order(
             stop_loss=order.stop_loss,
             trailing_stop=order.trailing_stop,
             strategy=order.strategy,
-            order_id=str(exchange_order.get("orderId", "")),
+            order_id=str(exchange_order.get("id", "")),
             status="open",
             trading_mode=key.trading_mode,
         )
